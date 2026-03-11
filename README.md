@@ -48,3 +48,54 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+---
+
+## Backend Setup (Ehliyet Uygulaması)
+
+This project includes a Node.js/Express backend with Prisma and PostgreSQL.
+
+### Prerequisites
+
+- PostgreSQL installed and running.
+
+### Setup Steps
+
+1.  **Navigate to Backend**:
+    ```bash
+    cd backend
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment**:
+    - Update `backend/.env` file.
+    - Set `DATABASE_URL` to your PostgreSQL connection string.
+    - Example: `DATABASE_URL="postgresql://username:password@localhost:5432/ehliyet_db?schema=public"`
+
+4.  **Run Database Migrations**:
+    ```bash
+    npx prisma migrate dev --name init
+    ```
+
+5.  **Start the Backend**:
+    ```bash
+    npm run dev
+    ```
+    (Or from the project root: `npm run backend`)
+
+### API Endpoints
+
+- `POST /api/auth/register`: Register a new user.
+- `POST /api/auth/login`: Login user.
+
+### Frontend Configuration
+
+The frontend is configured to connect to:
+- Android Emulator: `http://10.0.2.2:3000/api/auth`
+- iOS Simulator / Web: `http://localhost:3000/api/auth`
+
+If you are running on a physical device, update `API_URL` in `app/auth/login.tsx` and `app/auth/register.tsx` with your computer's local IP address.
