@@ -1,9 +1,48 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import { AUTH_URL } from '../../constants/api';
 
 export default function TabLayout() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadUserRole = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('userToken');
+        if (!token) {
+          if (isMounted) {
+            setIsAdmin(false);
+          }
+          return;
+        }
+
+        const response = await axios.get(`${AUTH_URL}/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (isMounted) {
+          setIsAdmin(Boolean(response.data?.isAdmin));
+        }
+      } catch {
+        if (isMounted) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    loadUserRole();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -55,6 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="admin"
         options={{
+          href: isAdmin ? undefined : null,
           title: 'Admin',
           tabBarIcon: ({ color }) => (
             <FontAwesome5 name="tools" size={20} color={color} />

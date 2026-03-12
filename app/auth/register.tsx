@@ -4,6 +4,17 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { AUTH_URL } from '../../constants/api';
 
+const PASSWORD_MIN_LENGTH = 3;
+const PASSWORD_MAX_LENGTH = 30;
+const PASSWORD_LETTER_REGEX = /[A-Za-zÇĞİÖŞÜçğıöşü]/;
+
+const isPasswordValidByPolicy = (value: string) => {
+  if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
+    return false;
+  }
+  return PASSWORD_LETTER_REGEX.test(value);
+};
+
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -11,14 +22,19 @@ export default function Register() {
   const router = useRouter();
 
   const handleRegister = async () => {
+    if (!isPasswordValidByPolicy(password)) {
+      Alert.alert('Hata', `Şifre ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} karakter olmalı ve en az bir harf içermelidir.`);
+      return;
+    }
+
     try {
       await axios.post(`${AUTH_URL}/register`, { name, email, password });
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => router.back() }
+      Alert.alert('Başarılı', 'Hesabın başarıyla oluşturuldu!', [
+        { text: 'Tamam', onPress: () => router.back() }
       ]);
     } catch (error: any) {
       console.log(error);
-      Alert.alert('Error', error.response?.data?.message || 'Registration failed');
+      Alert.alert('Hata', error.response?.data?.message || 'Kayıt başarısız');
     }
   };
 
@@ -49,6 +65,7 @@ export default function Register() {
         onChangeText={setPassword}
         secureTextEntry
       />
+      <Text style={styles.helperText}>Şifre {PASSWORD_MIN_LENGTH}-{PASSWORD_MAX_LENGTH} karakter olmalı ve en az bir harf içermelidir.</Text>
       
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Kayıt Ol</Text>
@@ -101,5 +118,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     fontSize: 16,
+  },
+  helperText: {
+    color: '#666',
+    marginTop: -8,
+    marginBottom: 12,
+    fontSize: 13,
   },
 });

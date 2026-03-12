@@ -6,6 +6,17 @@ import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AUTH_URL } from '../../constants/api';
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 30;
+const PASSWORD_LETTER_REGEX = /[A-Za-zÇĞİÖŞÜçğıöşü]/;
+
+const isPasswordValidByPolicy = (value: string) => {
+  if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
+    return false;
+  }
+  return PASSWORD_LETTER_REGEX.test(value);
+};
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +40,11 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
+    if (!isPasswordValidByPolicy(password)) {
+      Alert.alert('Hata', `Şifre ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} karakter olmalı ve en az bir harf içermelidir.`);
+      return;
+    }
+
     try {
       const response = await axios.post(`${AUTH_URL}/login`, { email, password });
       const { token } = response.data;
@@ -76,6 +92,7 @@ export default function Login() {
         onChangeText={setPassword}
         secureTextEntry
       />
+      <Text style={styles.helperText}>Şifre {PASSWORD_MIN_LENGTH}-{PASSWORD_MAX_LENGTH} karakter olmalı ve en az bir harf içermelidir.</Text>
       
       <TouchableOpacity 
         style={styles.rememberMeContainer} 
@@ -161,5 +178,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
     fontSize: 16,
+  },
+  helperText: {
+    color: '#666',
+    marginTop: -8,
+    marginBottom: 12,
+    fontSize: 13,
   },
 });
