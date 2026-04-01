@@ -1,7 +1,11 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import axios from 'axios';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_BASE_URL } from '../../constants/api';
 
 interface Message {
   id: string;
@@ -11,6 +15,7 @@ interface Message {
 }
 
 export default function AIScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -23,12 +28,13 @@ export default function AIScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputText.trim()) return;
 
+    const messageText = inputText.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: messageText,
       sender: 'user',
       createdAt: new Date(),
     };
@@ -37,34 +43,61 @@ export default function AIScreen() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const token = await SecureStore.getItemAsync('userToken');
+      if (!token) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      const history = messages.slice(-10).map((msg) => ({
+        sender: msg.sender,
+        text: msg.text,
+      }));
+
+      const response = await axios.post(
+        `${API_BASE_URL}/ai/chat`,
+        {
+          message: messageText,
+          history,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 20000,
+        }
+      );
+
+      const replyText = typeof response.data?.reply === 'string'
+        ? response.data.reply
+        : 'Şu an yanıt üretilemedi. Lütfen tekrar dene.';
+
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateResponse(userMessage.text),
+        text: replyText,
         sender: 'bot',
         createdAt: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
+    } catch (error: any) {
+      const backendMessage = error?.response?.data?.message;
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: typeof backendMessage === 'string'
+          ? backendMessage
+          : 'AI servisine şu an ulaşılamıyor. Birazdan tekrar dene.',
+        sender: 'bot',
+        createdAt: new Date(),
+      };
+      setMessages((prev) => [...prev, botResponse]);
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        await SecureStore.deleteItemAsync('userToken');
+        router.replace('/auth/login');
+      } else if (!backendMessage) {
+        Alert.alert('Bağlantı Hatası', 'AI servisine erişilemedi.');
+      }
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  };
-
-  const generateResponse = (text: string) => {
-    const lowerText = text.toLowerCase();
-    if (lowerText.includes('hız') || lowerText.includes('sınır')) {
-      return 'Yerleşim yerlerinde hız sınırı 50 km/s, şehirlerarası çift yönlü karayollarında 90 km/s, bölünmüş yollarda 110 km/s ve otoyollarda 130-140 km/s olarak belirlenmiştir.';
     }
-    if (lowerText.includes('levha') || lowerText.includes('işaret')) {
-      return 'Trafik levhaları tehlike uyarı işaretleri (üçgen), trafik tanzim işaretleri (yuvarlak) ve bilgi işaretleri (kare/dikdörtgen) olarak gruplandırılır.';
-    }
-    if (lowerText.includes('motor')) {
-      return 'Motor, yakıttan elde ettiği ısı enerjisini mekanik enerjiye çeviren makinedir. 4 zamanlı motorlarda emme, sıkıştırma, ateşleme ve egzoz zamanları bulunur.';
-    }
-    if (lowerText.includes('ilkyardım') || lowerText.includes('ilk yardım')) {
-      return 'Temel ilkyardım uygulamaları koruma, bildirme ve kurtarma (KBK) olarak özetlenir. Acil durumlarda 112 aranmalıdır.';
-    }
-    return 'Bu konuda henüz yeterli bilgim yok, ancak öğrenmeye devam ediyorum. Sınavla ilgili başka bir sorun var mı?';
   };
 
   useEffect(() => {
