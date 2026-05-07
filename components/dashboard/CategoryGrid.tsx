@@ -14,7 +14,6 @@ interface Category {
 interface CategoryGridProps {
   categories: Category[];
   loading: boolean;
-  isDarkTheme?: boolean;
 }
 
 const getCategoryStyle = (name: string) => {
@@ -23,29 +22,16 @@ const getCategoryStyle = (name: string) => {
   if (lower.includes('motor')) return { icon: 'cogs', color: '#F59E0B' };
   if (lower.includes('ilkyardım') || lower.includes('ilk yardım')) return { icon: 'briefcase-medical', color: '#10B981' };
   if (lower.includes('adabı') || lower.includes('adap')) return { icon: 'hands-helping', color: '#3B82F6' };
-  return { icon: 'book', color: '#8B5CF6' };
+  return { icon: 'book', color: '#8B5CF6' }; // Default for exams and others
 };
 
-export const CategoryGrid = ({ categories, loading, isDarkTheme = false }: CategoryGridProps) => {
+export const CategoryGrid = ({ categories, loading }: CategoryGridProps) => {
   const router = useRouter();
-  const colors = isDarkTheme
-    ? {
-        sectionTitle: '#F9FAFB',
-        card: '#111111',
-        textPrimary: '#F9FAFB',
-        textSecondary: '#9CA3AF',
-      }
-    : {
-        sectionTitle: '#111827',
-        card: '#FFFFFF',
-        textPrimary: '#111827',
-        textSecondary: '#6B7280',
-      };
 
   if (loading) {
     return (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>Konu Çalış</Text>
+        <Text style={styles.sectionTitle}>Konu Çalış</Text>
         <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 20 }} />
       </View>
     );
@@ -53,36 +39,36 @@ export const CategoryGrid = ({ categories, loading, isDarkTheme = false }: Categ
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>Konu Çalış</Text>
+      <Text style={styles.sectionTitle}>Konu Çalış</Text>
       <View style={styles.categoriesGrid}>
         {categories.map((cat) => {
           const style = getCategoryStyle(cat.name);
           return (
-            <TouchableOpacity
-              key={cat.id}
-              style={[styles.categoryCard, { backgroundColor: colors.card }]}
-              onPress={() =>
-                router.push({
-                  pathname: '/quiz/start',
-                  params: {
-                    categoryId: cat.id,
-                    categoryName: cat.name,
-                    questionCount: cat._count.questions,
-                  },
-                })
-              }
+            <TouchableOpacity 
+              key={cat.id} 
+              style={styles.categoryCard}
+              onPress={() => router.push({ 
+                pathname: '/quiz/start', 
+                params: { 
+                  categoryId: cat.id, 
+                  categoryName: cat.name,
+                  questionCount: cat._count.questions 
+                } 
+              })}
             >
               <View style={[styles.categoryIcon, { backgroundColor: `${style.color}20` }]}>
                 <FontAwesome5 name={style.icon} size={24} color={style.color} />
               </View>
-              <Text style={[styles.categoryTitle, { color: colors.textPrimary }]} numberOfLines={2}>
-                {cat.name}
-              </Text>
-              <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>{cat._count.questions} Soru</Text>
+              <Text style={styles.categoryTitle} numberOfLines={2}>{cat.name}</Text>
+              <Text style={styles.categoryCount}>{cat._count.questions} Soru</Text>
             </TouchableOpacity>
           );
         })}
-        {categories.length === 0 && <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Henüz kategori bulunamadı.</Text>}
+        {categories.length === 0 && (
+          <Text style={styles.emptyText}>
+            Henüz kategori bulunamadı.
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -95,6 +81,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#111827',
     marginBottom: 16,
   },
   categoriesGrid: {
@@ -105,6 +92,7 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: '47%',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
     shadowColor: '#000',
@@ -125,13 +113,16 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#111827',
     marginBottom: 4,
-    height: 44,
+    height: 44, // Fixed height for 2 lines
   },
   categoryCount: {
     fontSize: 12,
+    color: '#6B7280',
   },
   emptyText: {
+    color: '#666',
     textAlign: 'center',
     width: '100%',
     marginTop: 20,

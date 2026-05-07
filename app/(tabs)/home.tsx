@@ -10,7 +10,6 @@ import { ExamPeriodList } from '../../components/dashboard/ExamPeriodList';
 import { ProgressCard } from '../../components/dashboard/ProgressCard';
 import { QuickActions } from '../../components/dashboard/QuickActions';
 import { API_BASE_URL } from '../../constants/api';
-import { useAppTheme } from '../../context/theme-context';
 
 interface Category {
   id: string;
@@ -72,7 +71,6 @@ const getPriorityStyles = (priorityLevel: WeakTopic['priorityLevel']) => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isDarkTheme } = useAppTheme();
   const [categories, setCategories] = useState<Category[]>([]);
   const [examPeriods, setExamPeriods] = useState<ExamPeriod[]>([]);
   const [summary, setSummary] = useState<PreparationSummary>({
@@ -87,26 +85,6 @@ export default function HomeScreen() {
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const colors = isDarkTheme
-    ? {
-        background: '#000000',
-        card: '#111111',
-        cardBorder: '#1F2937',
-        textPrimary: '#F9FAFB',
-        textSecondary: '#9CA3AF',
-        accentSoft: '#1F2937',
-        actionBorder: '#374151',
-      }
-    : {
-        background: '#F9FAFB',
-        card: '#FFFFFF',
-        cardBorder: '#F3F4F6',
-        textPrimary: '#111827',
-        textSecondary: '#6B7280',
-        accentSoft: '#EEF2FF',
-        actionBorder: '#D1D5DB',
-      };
 
   const fetchData = async () => {
     try {
@@ -147,22 +125,22 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDarkTheme ? '#FFFFFF' : '#4F46E5'} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4F46E5" />
         }
       >
         {/* Header Section */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: colors.textPrimary }]}>{`Merhaba, ${summary.userName || 'Sürücü Adayı'} 👋`}</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Bugün ne çalışmak istersin?</Text>
+            <Text style={styles.greeting}>{`Merhaba, ${summary.userName || 'Sürücü Adayı'} 👋`}</Text>
+            <Text style={styles.subtitle}>Bugün ne çalışmak istersin?</Text>
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/profile')}>
-            <View style={[styles.avatarContainer, { backgroundColor: colors.accentSoft, borderColor: isDarkTheme ? '#374151' : '#E0E7FF' }]}>
+            <View style={styles.avatarContainer}>
               <FontAwesome5 name="user" size={20} color="#4F46E5" />
             </View>
           </TouchableOpacity>
@@ -179,23 +157,23 @@ export default function HomeScreen() {
         />
         {weakTopics.length > 0 && (
           <View style={styles.weakTopicsSection}>
-            <Text style={[styles.weakTopicsTitle, { color: colors.textPrimary }]}>Zayıf Konularım</Text>
+            <Text style={styles.weakTopicsTitle}>Zayıf Konularım</Text>
             {weakTopics.map((topic) => {
               const priorityStyle = getPriorityStyles(topic.priorityLevel);
               return (
-                <View key={topic.categoryId} style={[styles.weakTopicCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <View key={topic.categoryId} style={styles.weakTopicCard}>
                   <View style={styles.weakTopicLeft}>
                     <View style={styles.weakTopicHeaderRow}>
-                      <Text style={[styles.weakTopicName, { color: colors.textPrimary }]}>{topic.categoryName}</Text>
+                      <Text style={styles.weakTopicName}>{topic.categoryName}</Text>
                       <View style={[styles.priorityBadge, priorityStyle.badge]}>
                         <FontAwesome5 name={priorityStyle.icon.name} size={11} color={priorityStyle.icon.color} />
                         <Text style={[styles.priorityBadgeText, priorityStyle.text]}>{priorityStyle.label}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.weakTopicMeta, { color: colors.textSecondary }]}>{`${topic.wrongCount} yanlış • ${topic.questionCount} soru`}</Text>
+                    <Text style={styles.weakTopicMeta}>{`${topic.wrongCount} yanlış • ${topic.questionCount} soru`}</Text>
                     <View style={styles.weakTopicActionsRow}>
                       <TouchableOpacity
-                        style={[styles.secondaryActionButton, { backgroundColor: colors.card, borderColor: colors.actionBorder }]}
+                        style={styles.secondaryActionButton}
                         onPress={() =>
                           router.push({
                             pathname: '/quiz/exam',
@@ -207,7 +185,7 @@ export default function HomeScreen() {
                           })
                         }
                       >
-                        <Text style={[styles.secondaryActionText, { color: colors.textSecondary }]}>Konu Çalış</Text>
+                        <Text style={styles.secondaryActionText}>Konu Çalış</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.primaryActionButton}
@@ -233,9 +211,9 @@ export default function HomeScreen() {
             })}
           </View>
         )}
-        <QuickActions isDarkTheme={isDarkTheme} />
-        <CategoryGrid categories={categories} loading={loading} isDarkTheme={isDarkTheme} />
-        <ExamPeriodList periods={examPeriods} loading={loading} isDarkTheme={isDarkTheme} />
+        <QuickActions />
+        <CategoryGrid categories={categories} loading={loading} />
+        <ExamPeriodList periods={examPeriods} loading={loading} />
         
       </ScrollView>
     </SafeAreaView>

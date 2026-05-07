@@ -11,6 +11,7 @@ import { API_BASE_URL } from '../../constants/api';
 interface Option {
   id: string;
   text: string;
+  isCorrect: boolean;
 }
 
 interface Question {
@@ -18,12 +19,6 @@ interface Question {
   text: string;
   imageUrl?: string;
   options: Option[];
-}
-
-interface PracticeFeedback {
-  selectedOptionId: string;
-  correctOptionId: string;
-  isCorrect: boolean;
 }
 
 export default function ExamScreen() {
@@ -44,7 +39,6 @@ export default function ExamScreen() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({}); // questionId -> optionId
-  const [practiceFeedback, setPracticeFeedback] = useState<Record<string, PracticeFeedback>>({});
   const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 minutes in seconds
   const questionsRef = useRef<Question[]>([]);
   const answersRef = useRef<Record<string, string>>({});
@@ -100,11 +94,10 @@ export default function ExamScreen() {
       setQuestions(response.data);
       setCurrentIndex(0);
       setAnswers({});
-      setPracticeFeedback({});
       setTimeLeft(45 * 60);
     } catch (error) {
       console.error('Error fetching questions:', error);
-      Alert.alert('Hata', 'Sorular yÃ¼klenirken bir hata oluÅŸtu.');
+      Alert.alert('Hata', 'Sorular yüklenirken bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -116,113 +109,95 @@ export default function ExamScreen() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleAnswer = async (questionId: string, optionId: string) => {
+  const handleAnswer = (questionId: string, optionId: string) => {
     // In practice mode, prevent changing answer after selection because feedback is immediate
     if (isPracticeMode && answers[questionId]) return;
-
+    
     setAnswers((prev) => ({
       ...prev,
-      [questionId]: optionId,
+      [questionId]: optionId
     }));
-
-    if (!isPracticeMode) return;
-
-    try {
-      const token = await SecureStore.getItemAsync('userToken');
-      if (!token) {
-        router.replace('/auth/login');
-        return;
-      }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/results/answer-check`,
-        { questionId, optionId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const payload = response.data as { isCorrect: boolean; correctOptionId: string };
-
-      setPracticeFeedback((prev) => ({
-        ...prev,
-        [questionId]: {
-          selectedOptionId: optionId,
-          correctOptionId: payload.correctOptionId,
-          isCorrect: payload.isCorrect,
-        },
-      }));
-    } catch (error) {
-      console.error('Error checking answer:', error);
-    }
   };
 
   const finishExam = useCallback(async () => {
     const currentQuestions = questionsRef.current;
     const currentAnswers = answersRef.current;
+    // Calculate score
+    let correctCount = 0;
+    let wrongCount = 0;
+    let emptyCount = 0;
+    const correctQuestionIds: string[] = [];
+    const wrongQuestionIds: string[] = [];
 
-    if (currentQuestions.length === 0) {
+    currentQuestions.forEach((q) => {
+      const userAnswerId = currentAnswers[q.id];
+      if (!userAnswerId) {
+        emptyCount++;
+      } else {
+        const correctOption = q.options.find((o) => o.isCorrect);
+        if (correctOption && correctOption.id === userAnswerId) {
+          correctCount++;
+          correctQuestionIds.push(q.id);
+        } else {
+          wrongCount++;
+          wrongQuestionIds.push(q.id);
+        }
+      }
+    });
+
+    const total = currentQuestions.length;
+    if (total === 0) {
       router.back();
       return;
     }
+    const score = (correctCount / total) * 100;
 
+    // Save result to backend
     try {
       const token = await SecureStore.getItemAsync('userToken');
-      if (!token) {
-        router.replace('/auth/login');
-        return;
-      }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/results`,
-        {
-          testType: resolvedCategoryName || (isWrongMode ? 'Yanlışlarım' : isAdaptiveMode ? 'Adaptif Deneme' : 'Genel Deneme'),
-          questionIds: currentQuestions.map((q) => q.id),
-          answers: Object.entries(currentAnswers).map(([questionId, optionId]) => ({
-            questionId,
-            optionId,
-          })),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
+      if (token) {
+        await axios.post(
+          `${API_BASE_URL}/results`,
+          {
+            score,
+            totalQuestions: total,
+            correctCount,
+            wrongCount,
+            testType: resolvedCategoryName || (isWrongMode ? 'Yanlışlarım' : isAdaptiveMode ? 'Adaptif Deneme' : 'Genel Deneme'),
+            correctQuestionIds,
+            wrongQuestionIds,
           },
-        }
-      );
-
-      const result = response.data as {
-        totalQuestions: number;
-        correctCount: number;
-        wrongCount: number;
-        emptyCount: number;
-        score: number;
-      };
-
-      router.replace({
-        pathname: '/quiz/result',
-        params: {
-          total: result.totalQuestions,
-          correct: result.correctCount,
-          wrong: result.wrongCount,
-          empty: result.emptyCount,
-          score: String(result.score),
-          categoryName: resolvedCategoryName || (isWrongMode ? 'Yanlışlarım' : isAdaptiveMode ? 'Adaptif Deneme' : 'Genel Deneme'),
-        },
-      });
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
     } catch (error) {
       console.error('Error saving exam result:', error);
-      Alert.alert('Hata', 'Sınav sonucu kaydedilemedi. Lütfen tekrar deneyin.');
+      // We don't block navigation on error, just log it
     }
+
+    router.replace({
+      pathname: '/quiz/result',
+      params: {
+        total,
+        correct: correctCount,
+        wrong: wrongCount,
+        empty: emptyCount,
+        score: score.toFixed(1),
+        categoryName: resolvedCategoryName || (isWrongMode ? 'Yanlışlarım' : isAdaptiveMode ? 'Adaptif Deneme' : 'Genel Deneme'),
+      },
+    });
   }, [isAdaptiveMode, isWrongMode, resolvedCategoryName, router]);
 
   const confirmFinish = useCallback(() => {
     Alert.alert(
-      'SÄ±navÄ± Bitir',
-      'SÄ±navÄ± bitirmek istediÄŸinize emin misiniz?',
+      'Sınavı Bitir',
+      'Sınavı bitirmek istediğinize emin misiniz?',
       [
-        { text: 'Ä°ptal', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         { text: 'Bitir', style: 'destructive', onPress: finishExam }
       ]
     );
@@ -254,7 +229,7 @@ export default function ExamScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color="#4F46E5" />
-        <Text style={{ marginTop: 10, color: '#6B7280' }}>Sorular hazÄ±rlanÄ±yor...</Text>
+        <Text style={{ marginTop: 10, color: '#6B7280' }}>Sorular hazırlanıyor...</Text>
       </View>
     );
   }
@@ -263,13 +238,13 @@ export default function ExamScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={{ fontSize: 18, color: '#374151', textAlign: 'center' }}>
-          Bu kategoride henÃ¼z soru bulunmamaktadÄ±r.
+          Bu kategoride henüz soru bulunmamaktadır.
         </Text>
         <TouchableOpacity 
           style={styles.closeButton} 
           onPress={() => router.back()}
         >
-          <Text style={styles.closeButtonText}>Geri DÃ¶n</Text>
+          <Text style={styles.closeButtonText}>Geri Dön</Text>
         </TouchableOpacity>
       </View>
     );
@@ -279,29 +254,33 @@ export default function ExamScreen() {
 
   const getOptionStyle = (optionId: string) => {
     const isSelected = answers[currentQuestion.id] === optionId;
-    const feedback = practiceFeedback[currentQuestion.id];
+    const isCorrect = currentQuestion.options.find(o => o.id === optionId)?.isCorrect;
+    const isAnswered = !!answers[currentQuestion.id];
 
-    if (isPracticeMode && feedback) {
-      if (optionId === feedback.correctOptionId) return [styles.optionButton, styles.optionCorrect];
-      if (isSelected && !feedback.isCorrect) return [styles.optionButton, styles.optionWrong];
-      if (isSelected && feedback.isCorrect) return [styles.optionButton, styles.optionCorrect];
+    if (isPracticeMode && isAnswered) {
+      if (isSelected && isCorrect) return [styles.optionButton, styles.optionCorrect];
+      if (isSelected && !isCorrect) return [styles.optionButton, styles.optionWrong];
+      if (!isSelected && isCorrect) return [styles.optionButton, styles.optionCorrect]; // Show correct answer
+    } else {
+      if (isSelected) return [styles.optionButton, styles.optionSelected];
     }
-
-    if (isSelected) return [styles.optionButton, styles.optionSelected];
+    
     return styles.optionButton;
   };
 
   const getOptionTextStyle = (optionId: string) => {
     const isSelected = answers[currentQuestion.id] === optionId;
-    const feedback = practiceFeedback[currentQuestion.id];
+    const isCorrect = currentQuestion.options.find(o => o.id === optionId)?.isCorrect;
+    const isAnswered = !!answers[currentQuestion.id];
 
-    if (isPracticeMode && feedback) {
-      if (optionId === feedback.correctOptionId) return styles.optionTextCorrect;
-      if (isSelected && !feedback.isCorrect) return styles.optionTextWrong;
-      if (isSelected && feedback.isCorrect) return styles.optionTextCorrect;
+    if (isPracticeMode && isAnswered) {
+      if (isSelected && isCorrect) return styles.optionTextCorrect;
+      if (isSelected && !isCorrect) return styles.optionTextWrong;
+      if (!isSelected && isCorrect) return styles.optionTextCorrect;
+    } else {
+      if (isSelected) return styles.optionTextSelected;
     }
-
-    if (isSelected) return styles.optionTextSelected;
+    
     return styles.optionText;
   };
 
@@ -340,7 +319,7 @@ export default function ExamScreen() {
               <TouchableOpacity
                 key={option.id}
                 style={getOptionStyle(option.id)}
-                onPress={() => void handleAnswer(currentQuestion.id, option.id)}
+                onPress={() => handleAnswer(currentQuestion.id, option.id)}
               >
                 <View style={[
                   styles.optionLabel,
@@ -366,7 +345,7 @@ export default function ExamScreen() {
           onPress={() => setCurrentIndex((prev) => prev - 1)}
         >
           <FontAwesome5 name="chevron-left" size={16} color={currentIndex === 0 ? '#9CA3AF' : '#4F46E5'} />
-          <Text style={[styles.navButtonText, currentIndex === 0 && styles.navButtonTextDisabled]}>Ã–nceki</Text>
+          <Text style={[styles.navButtonText, currentIndex === 0 && styles.navButtonTextDisabled]}>Önceki</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -557,6 +536,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-
-

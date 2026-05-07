@@ -6,7 +6,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../../constants/api';
-import { useAppTheme } from '../../context/theme-context';
 
 interface Message {
   id: string;
@@ -17,44 +16,17 @@ interface Message {
 
 export default function AIScreen() {
   const router = useRouter();
-  const { isDarkTheme } = useAppTheme();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Merhaba! Ben senin yapay zeka destekli sürüş eğitmeninim. Trafik kuralları, levhalar veya motor tekniği ile ilgili aklına takılan her şeyi bana sorabilirsin.',
+      text: 'Merhaba! Ben senin yapay zeka destekli sürüş eğitmeninim. Trafik kuralları, levhalar veya motor tekniği ile ilgili aklına takılan her şeyi bana sorabilirsin. 🚗💡',
       sender: 'bot',
       createdAt: new Date(),
-    },
+    }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const colors = isDarkTheme
-    ? {
-        background: '#000000',
-        headerBg: '#111111',
-        headerBorder: '#1F2937',
-        botBubble: '#111111',
-        botText: '#E5E7EB',
-        textPrimary: '#F9FAFB',
-        textSecondary: '#9CA3AF',
-        inputWrap: '#111111',
-        inputBg: '#1F2937',
-        inputText: '#F9FAFB',
-      }
-    : {
-        background: '#F9FAFB',
-        headerBg: '#FFFFFF',
-        headerBorder: '#F3F4F6',
-        botBubble: '#FFFFFF',
-        botText: '#374151',
-        textPrimary: '#111827',
-        textSecondary: '#6B7280',
-        inputWrap: '#FFFFFF',
-        inputBg: '#F3F4F6',
-        inputText: '#111827',
-      };
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -95,7 +67,9 @@ export default function AIScreen() {
         }
       );
 
-      const replyText = typeof response.data?.reply === 'string' ? response.data.reply : 'Şu an yanıt üretilemedi. Lütfen tekrar dene.';
+      const replyText = typeof response.data?.reply === 'string'
+        ? response.data.reply
+        : 'Şu an yanıt üretilemedi. Lütfen tekrar dene.';
 
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -108,7 +82,9 @@ export default function AIScreen() {
       const backendMessage = error?.response?.data?.message;
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: typeof backendMessage === 'string' ? backendMessage : 'AI servisine şu an ulaşılamıyor. Birazdan tekrar dene.',
+        text: typeof backendMessage === 'string'
+          ? backendMessage
+          : 'AI servisine şu an ulaşılamıyor. Birazdan tekrar dene.',
         sender: 'bot',
         createdAt: new Date(),
       };
@@ -129,30 +105,34 @@ export default function AIScreen() {
   }, [messages, isTyping]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
-      <View style={[styles.header, { backgroundColor: colors.headerBg, borderBottomColor: colors.headerBorder }]}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>AI Asistan</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Trafik kuralları hakkında her şeyi sor</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>AI Asistan</Text>
+        <Text style={styles.headerSubtitle}>Trafik kuralları hakkında her şeyi sor</Text>
       </View>
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.chatContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        ref={scrollViewRef}
+        contentContainerStyle={styles.chatContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         {messages.map((msg) => (
-          <View key={msg.id} style={[styles.message, msg.sender === 'bot' ? [styles.botMessage, { backgroundColor: colors.botBubble }] : styles.userMessage]}>
-            <Text style={[styles.messageText, { color: colors.botText }, msg.sender === 'user' && styles.userMessageText]}>{msg.text}</Text>
+          <View key={msg.id} style={[styles.message, msg.sender === 'bot' ? styles.botMessage : styles.userMessage]}>
+            <Text style={[styles.messageText, msg.sender === 'user' && styles.userMessageText]}>{msg.text}</Text>
           </View>
         ))}
         {isTyping && (
-          <View style={[styles.message, styles.botMessage, { backgroundColor: colors.botBubble }]}>
+          <View style={[styles.message, styles.botMessage]}>
             <ActivityIndicator size="small" color="#4F46E5" />
           </View>
         )}
       </ScrollView>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-        <View style={[styles.inputContainer, { backgroundColor: colors.inputWrap, borderTopColor: colors.headerBorder }]}> 
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.inputText }]}
-            placeholder="Bir soru sor..."
+        <View style={styles.inputContainer}>
+          <TextInput 
+            style={styles.input} 
+            placeholder="Bir soru sor..." 
             placeholderTextColor="#9CA3AF"
             value={inputText}
             onChangeText={setInputText}
@@ -171,17 +151,22 @@ export default function AIScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F9FAFB',
   },
   header: {
     padding: 20,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#111827',
   },
   headerSubtitle: {
     fontSize: 14,
+    color: '#6B7280',
     marginTop: 4,
   },
   chatContainer: {
@@ -195,6 +180,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   botMessage: {
+    backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
@@ -210,6 +196,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
+    color: '#374151',
     lineHeight: 20,
   },
   userMessageText: {
@@ -217,7 +204,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 16,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -225,9 +214,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 44,
+    backgroundColor: '#F3F4F6',
     borderRadius: 22,
     paddingHorizontal: 16,
     fontSize: 14,
+    color: '#111827',
   },
   sendButton: {
     width: 44,

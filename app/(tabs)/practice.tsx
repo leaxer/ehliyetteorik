@@ -6,7 +6,6 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL } from '../../constants/api';
-import { useAppTheme } from '../../context/theme-context';
 
 interface Category {
   id: string;
@@ -18,29 +17,9 @@ interface Category {
 
 export default function PracticeScreen() {
   const router = useRouter();
-  const { isDarkTheme } = useAppTheme();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const colors = isDarkTheme
-    ? {
-        background: '#000000',
-        headerBg: '#111111',
-        headerBorder: '#1F2937',
-        card: '#111111',
-        textPrimary: '#F9FAFB',
-        textSecondary: '#9CA3AF',
-        accentSoft: '#1F2937',
-      }
-    : {
-        background: '#F9FAFB',
-        headerBg: '#FFFFFF',
-        headerBorder: '#F3F4F6',
-        card: '#FFFFFF',
-        textPrimary: '#111827',
-        textSecondary: '#6B7280',
-        accentSoft: '#EEF2FF',
-      };
 
   const fetchCategories = async () => {
     try {
@@ -92,23 +71,25 @@ export default function PracticeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.headerBg, borderBottomColor: colors.headerBorder }]}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Çalışma Alanı</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Kendini dene ve eksiklerini gör (Süre Yok)</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Çalışma Alanı</Text>
+        <Text style={styles.headerSubtitle}>Kendini dene ve eksiklerini gör (Süre Yok)</Text>
       </View>
 
-      <ScrollView
+      <ScrollView 
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDarkTheme ? '#FFFFFF' : '#4F46E5'} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        <TouchableOpacity style={[styles.adaptiveCard, { backgroundColor: colors.card, borderColor: isDarkTheme ? '#374151' : '#E0E7FF' }]} onPress={startAdaptiveExam}>
-          <View style={[styles.adaptiveIcon, { backgroundColor: colors.accentSoft }]}>
+        <TouchableOpacity style={styles.adaptiveCard} onPress={startAdaptiveExam}>
+          <View style={styles.adaptiveIcon}>
             <FontAwesome5 name="chart-line" size={18} color="#4F46E5" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.adaptiveTitle, { color: colors.textPrimary }]}>Adaptif Deneme</Text>
-            <Text style={[styles.adaptiveDesc, { color: colors.textSecondary }]}>Yanlışlarına göre sana özel 50 soru</Text>
+            <Text style={styles.adaptiveTitle}>Adaptif Deneme</Text>
+            <Text style={styles.adaptiveDesc}>Yanlışlarına göre sana özel 50 soru</Text>
           </View>
           <FontAwesome5 name="chevron-right" size={14} color="#9CA3AF" />
         </TouchableOpacity>
@@ -116,31 +97,29 @@ export default function PracticeScreen() {
         {loading ? (
           <ActivityIndicator size="large" color="#4F46E5" />
         ) : categories.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Henüz kategori bulunamadı.</Text>
+          <Text style={styles.emptyText}>Henüz kategori bulunamadı.</Text>
         ) : (
           categories.map((category) => {
             const { icon, color } = getCategoryIcon(category.name);
             return (
-              <TouchableOpacity
-                key={category.id}
-                style={[styles.card, { backgroundColor: colors.card }]}
-                onPress={() =>
-                  router.push({
-                    pathname: '/quiz/exam',
-                    params: {
-                      categoryId: category.id,
-                      categoryName: category.name,
-                      mode: 'practice',
-                    },
-                  })
-                }
+              <TouchableOpacity 
+                key={category.id} 
+                style={styles.card}
+                onPress={() => router.push({
+                  pathname: '/quiz/exam',
+                  params: { 
+                    categoryId: category.id, 
+                    categoryName: category.name,
+                    mode: 'practice' 
+                  }
+                })}
               >
                 <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
                   <FontAwesome5 name={icon} size={24} color={color} />
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{category.name}</Text>
-                  <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>{category._count.questions} Soru</Text>
+                  <Text style={styles.cardTitle}>{category.name}</Text>
+                  <Text style={styles.cardDesc}>{category._count.questions} Soru</Text>
                 </View>
                 <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
               </TouchableOpacity>
@@ -155,17 +134,22 @@ export default function PracticeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F9FAFB',
   },
   header: {
     padding: 20,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#111827',
   },
   headerSubtitle: {
     fontSize: 14,
+    color: '#6B7280',
     marginTop: 4,
   },
   content: {
@@ -173,6 +157,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -184,11 +169,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   adaptiveCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+    borderColor: '#E0E7FF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -199,6 +186,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -206,9 +194,11 @@ const styles = StyleSheet.create({
   adaptiveTitle: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#111827',
   },
   adaptiveDesc: {
     fontSize: 12,
+    color: '#6B7280',
     marginTop: 2,
   },
   iconContainer: {
@@ -225,13 +215,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#111827',
   },
   cardDesc: {
     fontSize: 12,
+    color: '#6B7280',
     marginTop: 2,
   },
   emptyText: {
     textAlign: 'center',
+    color: '#6B7280',
     marginTop: 20,
   },
 });

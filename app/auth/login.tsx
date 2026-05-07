@@ -65,11 +65,7 @@ export default function Login() {
         await SecureStore.deleteItemAsync('savedEmail');
       }
 
-      const meResponse = await axios.get(`${AUTH_URL}/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const onboardingCompleted = Boolean(meResponse.data?.onboardingCompleted);
-      router.replace(onboardingCompleted ? '/(tabs)/home' : '/onboarding');
+      router.replace('/(tabs)/home'); 
     } catch (error: any) {
       console.log(error);
       Alert.alert('Hata', error.response?.data?.message || 'Giriş başarısız');
