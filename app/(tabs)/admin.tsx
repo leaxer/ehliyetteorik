@@ -520,7 +520,7 @@ export default function AdminScreen() {
                 style={styles.input}
                 value={examPeriod}
                 onChangeText={setExamPeriod}
-                placeholder="Örn: 2024 Ağustos"
+                placeholder="?rn: 2024 A?ustos"
                 editable={!saving}
               />
 
@@ -601,7 +601,7 @@ export default function AdminScreen() {
                 style={styles.input}
                 value={filterExamPeriod}
                 onChangeText={setFilterExamPeriod}
-                placeholder="Örn: 2024 Ağustos"
+                placeholder="?rn: 2024 A?ustos"
                 editable={!listLoading && !editSaving}
               />
 
@@ -682,7 +682,7 @@ export default function AdminScreen() {
                       style={styles.input}
                       value={editExamPeriod}
                       onChangeText={setEditExamPeriod}
-                      placeholder="Örn: 2024 Ağustos"
+                      placeholder="?rn: 2024 A?ustos"
                       editable={!editSaving}
                     />
 
@@ -763,7 +763,7 @@ export default function AdminScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.questionMeta}>
                           {q.category?.name || '-'}
-                          {q.examPeriod ? ` • ${q.examPeriod}` : ''}
+                          {q.examPeriod ? ` ⬢ ${q.examPeriod}` : ''}
                         </Text>
                         <Text style={styles.questionText} numberOfLines={3}>
                           {q.text}
@@ -1037,3 +1037,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+

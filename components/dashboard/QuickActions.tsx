@@ -3,22 +3,37 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-export const QuickActions = () => {
+interface QuickActionsProps {
+  isDarkTheme?: boolean;
+}
+
+export const QuickActions = ({ isDarkTheme = false }: QuickActionsProps) => {
   const router = useRouter();
+  const colors = isDarkTheme
+    ? {
+        sectionTitle: '#F9FAFB',
+        card: '#111111',
+        text: '#D1D5DB',
+      }
+    : {
+        sectionTitle: '#111827',
+        card: '#FFFFFF',
+        text: '#374151',
+      };
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Hızlı İşlemler</Text>
+      <Text style={[styles.sectionTitle, { color: colors.sectionTitle }]}>Hızlı İşlemler</Text>
       <View style={styles.quickActionsContainer}>
-        <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(tabs)/practice')}>
+        <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: colors.card }]} onPress={() => router.push('/(tabs)/practice')}>
           <View style={[styles.quickActionIcon, { backgroundColor: '#EEF2FF' }]}>
             <FontAwesome5 name="play" size={20} color="#4F46E5" />
           </View>
-          <Text style={styles.quickActionText}>Deneme Sınavı</Text>
+          <Text style={[styles.quickActionText, { color: colors.text }]}>Deneme Sınavı</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={styles.quickActionCard}
+          style={[styles.quickActionCard, { backgroundColor: colors.card }]}
           onPress={() =>
             router.push({
               pathname: '/quiz/exam',
@@ -29,14 +44,14 @@ export const QuickActions = () => {
           <View style={[styles.quickActionIcon, { backgroundColor: '#FEF2F2' }]}>
             <FontAwesome5 name="exclamation-triangle" size={20} color="#EF4444" />
           </View>
-          <Text style={styles.quickActionText}>Yanlışlarım</Text>
+          <Text style={[styles.quickActionText, { color: colors.text }]}>Yanlışlarım</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/(tabs)/ai')}>
+        <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: colors.card }]} onPress={() => router.push('/(tabs)/ai')}>
           <View style={[styles.quickActionIcon, { backgroundColor: '#ECFDF5' }]}>
             <FontAwesome5 name="robot" size={20} color="#10B981" />
           </View>
-          <Text style={styles.quickActionText}>AI Asistan</Text>
+          <Text style={[styles.quickActionText, { color: colors.text }]}>AI Asistan</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -50,7 +65,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 16,
   },
   quickActionsContainer: {
@@ -59,7 +73,6 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     width: '31%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -80,7 +93,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
     textAlign: 'center',
   },
 });

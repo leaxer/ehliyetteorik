@@ -1,7 +1,9 @@
-import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import axios from 'axios';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { AUTH_URL } from '../constants/api';
 
 export default function Index() {
   const router = useRouter();
@@ -10,16 +12,21 @@ export default function Index() {
     const checkAuth = async () => {
       try {
         const token = await SecureStore.getItemAsync('userToken');
-        
-        if (token) {
-          // Token varsa ana sayfaya yönlendir
-          router.replace('/(tabs)/home');
-        } else {
-          // Token yoksa giriş sayfasına yönlendir
+
+        if (!token) {
           router.replace('/auth/login');
+          return;
         }
+
+        const meResponse = await axios.get(`${AUTH_URL}/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const onboardingCompleted = Boolean(meResponse.data?.onboardingCompleted);
+        router.replace(onboardingCompleted ? '/(tabs)/home' : '/onboarding');
       } catch (error) {
-        console.error("Auth check failed:", error);
+        console.error('Auth check failed:', error);
+        await SecureStore.deleteItemAsync('userToken');
         router.replace('/auth/login');
       }
     };

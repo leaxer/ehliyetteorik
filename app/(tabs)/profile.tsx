@@ -5,10 +5,11 @@ import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { API_BASE_URL, AUTH_URL } from '../../constants/api';
+import { useAppTheme } from '../../context/theme-context';
 
 interface User {
   id: number;
@@ -69,7 +70,7 @@ if (!IS_EXPO_GO) {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const systemTheme = useColorScheme();
+  const { activeTheme, setThemeLock } = useAppTheme();
   const [user, setUser] = useState<User | null>(null);
   const [results, setResults] = useState<ExamResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,7 +256,11 @@ export default function ProfileScreen() {
   const updateSetting = async <K extends keyof ProfileSettings>(key: K, value: ProfileSettings[K]) => {
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
-    await SecureStore.setItemAsync(PROFILE_SETTINGS_KEY, JSON.stringify(nextSettings));
+    if (key === 'themeLock') {
+      await setThemeLock(value as ProfileSettings['themeLock']);
+    } else {
+      await SecureStore.setItemAsync(PROFILE_SETTINGS_KEY, JSON.stringify(nextSettings));
+    }
     if (key === 'notificationsEnabled') {
       await syncNotificationSchedules(nextSettings, user?.examDate ?? null);
     }
@@ -383,7 +388,6 @@ export default function ProfileScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
-  const activeTheme = settings.themeLock === 'system' ? (systemTheme === 'dark' ? 'dark' : 'light') : settings.themeLock;
   const fontScale = settings.largeTextMode ? 1.16 : 1;
 
   const colors = (() => {
@@ -391,30 +395,30 @@ export default function ProfileScreen() {
       if (settings.highContrastMode) {
         return {
           background: '#000000',
-          card: '#121212',
-          cardAlt: '#1A1A1A',
+          card: '#000000',
+          cardAlt: '#111111',
           textPrimary: '#FFFFFF',
           textSecondary: '#E5E7EB',
-          divider: '#FFFFFF',
-          inputBg: '#0A0A0A',
+          divider: '#374151',
+          inputBg: '#111111',
           inputBorder: '#FFFFFF',
           accent: '#60A5FA',
-          accentSoft: '#1D4ED8',
+          accentSoft: '#1F2937',
           success: '#22C55E',
           danger: '#F87171',
         };
       }
       return {
-        background: '#0F172A',
-        card: '#111827',
-        cardAlt: '#1F2937',
+        background: '#000000',
+        card: '#000000',
+        cardAlt: '#111111',
         textPrimary: '#F9FAFB',
         textSecondary: '#9CA3AF',
         divider: '#374151',
-        inputBg: '#111827',
+        inputBg: '#111111',
         inputBorder: '#374151',
         accent: '#818CF8',
-        accentSoft: '#312E81',
+        accentSoft: '#1F2937',
         success: '#34D399',
         danger: '#F87171',
       };
